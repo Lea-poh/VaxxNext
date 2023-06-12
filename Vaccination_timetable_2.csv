@@ -1,0 +1,10 @@
+﻿Age,Diphtherie Tetanus,Pertussis,Haemophilus influenzae,Poliomyelitis,Hepatitis B,Pneumokokken,MMR,Varizellen,Humane Papillomaviren,Influenza
+0.166,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,,,,
+0.33,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,,,,
+0.75,,,,,,,TRUE,TRUE,,
+1,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,,
+7,TRUE,TRUE,,TRUE,,,,,,
+15,TRUE,TRUE,,,TRUE,,,,TRUE,
+25,TRUE,,,,,,,,,
+45,TRUE,,,,,,,,,
+recurring_boosts,25:20_65:10,,,,,,,,,15:01
