@@ -53,7 +53,7 @@ server <- function(input, output) {
   output$User_Info <- renderUI({
     if(file.exists(paste0(data_path,"User_Info.Rds"))){
       Info <- readRDS(paste0(data_path,"User_Info.Rds"))
-      a <- paste0("<span font-size:100%> Name: ",Info$Name , "<br> Date of birth: ",Info$date_of_bith,"</span>")
+      a <- paste0("<span font-size:100%> Name: ",Info$Name , "<br> Date of birth: ",Info$date_of_birth,"</span>")
       HTML(a)
     }else{
       tagList(
@@ -63,7 +63,20 @@ server <- function(input, output) {
     }
   })
   
-  vaccination_timetable <- read.csv(paste0(data_path,"Vaccination_timetable_2.csv"))
+  date_of_birth <- reactive({
+    if(file.exists(paste0(data_path,"User_Info.Rds"))){
+      Info <- readRDS(paste0(data_path,"User_Info.Rds"))
+      Info$date_of_birth
+    }else{
+      input$date_of_birth
+    }
+  })
+  
+  age <- reactive({
+    as.numeric(difftime(Sys.Date(),date_of_birth(), units = "weeks"))/52.25
+  })
+  
+  vaccination_timetable <- read.csv(paste0(data_path,"Vaccination_timetable.csv"))
   
   dt <- read.csv(paste0(data_path,"VN.csv"), na.strings = "")
   dt <- apply(dt,2,function(x){
@@ -86,11 +99,11 @@ server <- function(input, output) {
   })
   
   output$text_Test <- renderText({
-    status()
+    vaccine_names()
   })
   
   output$df_Test <- renderTable({
-    status()
+    str(vaccine_names())
   })
   
   vaccine_names <- reactive({names(vaccinations())})
@@ -104,13 +117,46 @@ server <- function(input, output) {
   })
   
   next_vaccination <- reactive({
-    unlist(last_vaccination()) + 356.25
+    first_vaccination <- vaccination_timetable[vaccination_timetable$Age == "first_vaccination",]
+    next_vaccination <- c()
+    for(i in 1:length(vaccinations())){
+      current_vac <- vaccine_names()[i]
+      time_table <- vaccination_timetable[1:(nrow(vaccination_timetable)-2),c("Age",current_vac)]
+      time_table <- time_table[time_table[,2] != "",]
+      recurring_boosters <- vaccination_timetable[vaccination_timetable$Age == "recurring_boosts",current_vac]
+      recurring_boosters <- strsplit(recurring_boosters,"_")[[1]]
+      recurring_boosters <- matrix(as.numeric(unlist(strsplit(recurring_boosters,":"))),nrow = length(recurring_boosters), ncol = 2, byrow = TRUE)
+      colnames(recurring_boosters) <- c("Age","booster_time")
+      if(length(vaccinations()[[i]]) == 0){
+        if(age() > (as.numeric(first_vaccination[,current_vac]) + 3)){ # if unvaccinated remind up to 3 years
+          next_vaccination <- c(next_vaccination, NA)
+        }else{
+          next_vaccination <- c(next_vaccination, date_of_birth() + as.numeric(first_vaccination[,current_vac]))
+        }
+      }else{
+        n_vaccinations_had <- length(vaccinations()[[current_vac]])
+        n_needed <- nrow(time_table)
+        if(n_vaccinations_had >= n_needed){
+          next_booster_after <- recurring_boosters[age() >= recurring_boosters[,"Age"],2]
+          if(length(next_booster_after) != 0){
+            next_vaccination <- c(next_vaccination, (tail(vaccinations()[[i]],1)+next_booster_after*365.25))
+          }else{
+            next_vaccination <- c(next_vaccination, NA)
+          }
+        }else{
+          time_between_vaccinations <- as.numeric(time_table$Age[-1]) - as.numeric(time_table$Age[-nrow(time_table)])
+          next_vaccination <- c(next_vaccination, (tail(vaccinations()[[i]],1)+time_between_vaccinations[n_vaccinations_had]*365.25 ))
+        }
+      }
+    }
+    next_vaccination
   })
   
   status <- reactive({
     status <- rep("ok",length = length(last_vaccination()))
     status[(next_vaccination() - orange_status_after_n_days) < Sys.Date()] <- "soon"
     status[next_vaccination() < Sys.Date()] <- "overdue"
+    status[next_vaccination() + 3*365.25 < Sys.Date()] <- "3+ years overdue"
     status
   })
   
@@ -125,7 +171,7 @@ server <- function(input, output) {
   
   output$summaryTable <- DT::renderDataTable({
     datatable(out_table(), selection = 'single', rownames = FALSE )%>%formatStyle("Status",
-            backgroundColor=styleEqual(c("ok","soon","overdue"), c("green","orange","red")))
+            backgroundColor=styleEqual(c("ok","soon","overdue","3+ years overdue"), c("green","orange","red","darkred")))
     # datatable(out_table)
     
   })
@@ -135,7 +181,7 @@ server <- function(input, output) {
   })
   
   output$header_selected_vaccine <- renderUI({
-    status_table <- data.frame(status = c("ok","soon","overdue"), color = c("green","orange","red"))
+    status_table <- data.frame(status = c("ok","soon","overdue","3+ years overdue"), c("green","orange","red","darkred"))
       current_vaccine_status <- out_table()$Status[input$summaryTable_rows_selected]
       status_color <- status_table$color[status_table$status == current_vaccine_status]
       a <- paste0("<span style=color:",status_color,";font-size:200%>", selected_vaccine(), "</span>")
@@ -174,7 +220,7 @@ server <- function(input, output) {
   
   observeEvent(input$date_of_birth, {
     if(!is.null(input$date_of_birth) & !is.null(input$Name)){
-    Info <- list(Name = input$Name ,date_of_bith = input$date_of_birth)
+    Info <- list(Name = input$Name ,date_of_birth = input$date_of_birth)
     saveRDS(Info,paste0(data_path,"User_Info.Rds"))
     }
   })
