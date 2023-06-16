@@ -6,4 +6,4 @@
 7,TRUE,TRUE,,TRUE,,,,,,,
 15,TRUE,TRUE,,,TRUE,,,,TRUE,,
 first_vaccination,0.166,0.166,0.166,0.166,0.166,0.166,0.75,0.75,15,15,6
-recurring_boosts,25:20_65:10,,,,,,,,,15:01,6:10_65:5
+recurring_boosts,25:20 65:10,,,,,,,,,15:01,6:10 65:5

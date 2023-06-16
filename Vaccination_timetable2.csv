@@ -1,0 +1,9 @@
+"Age","Diphtherie.Tetanus","Pertussis","Haemophilus.influenzae","Poliomyelitis","Hepatitis.B","Pneumokokken","MMR","Varizellen","Humane.Papillomaviren","Influenza","FSME","Test","Zahnarzt","Test2","Test3","Test4","Test5.x","Test5.y","Test67","V2","Test45.x","Test56","Test45.y","Test5476","Test.454","Test4365","Testi67485","Test546"
+"0.166","TRUE","TRUE","TRUE","TRUE","TRUE","TRUE","","","","","",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"0.33","TRUE","TRUE","TRUE","TRUE","TRUE","TRUE","","","","","",NA,NA,NA,NA,NA,NA,NA,"TRUE",NA,NA,"TRUE","TRUE",NA,NA,"TRUE","TRUE","TRUE"
+"0.75","","","","","","","TRUE","TRUE","","","",NA,NA,"TRUE","TRUE",NA,"TRUE",NA,NA,NA,NA,"TRUE","TRUE",NA,NA,"TRUE",NA,"TRUE"
+"1","TRUE","TRUE","TRUE","TRUE","TRUE","TRUE","TRUE","TRUE","","","",NA,NA,NA,NA,"TRUE",NA,NA,NA,NA,NA,NA,NA,NA,NA,"TRUE","TRUE",NA
+"15","TRUE","TRUE","","","TRUE","","","","TRUE","","",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"7","TRUE","TRUE","","TRUE","","","","","","","","TRUE","TRUE",NA,"TRUE","TRUE","TRUE","TRUE",NA,NA,NA,NA,NA,NA,NA,NA,"TRUE",NA
+"first_vaccination","0.166","0.166","0.166","0.166","0.166","0.166","0.75","0.75","15","15","6","7","7","0.75","0.75","1","0.75","7","0.33",NA,NA,"0.33","0.33",NA,NA,"0.33","0.33","0.33"
+"recurring_boosts","25:20 65:10","","","","","","","","","15:01","6:10 65:5","15:30 60:10","7:1","30:5","","","","","",NA,NA,"","",NA,NA,"45:4 87:7","76:234 98:98","45:1"

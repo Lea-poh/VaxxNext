@@ -1,54 +1,70 @@
-
+## app.R ##
 library(shiny)
+library(shinydashboard)
 library(DT)
 
-
-# setwd("~/Documents/Privat/apps/Vaxxnext/")
-
-# source("functions.R")
-
-# Define UI for application that draws a histogram
-ui <- fluidPage(
-  titlePanel( div(column(width = 4, tags$img(src = "VaxxNext_logo.jpg",height = '80', width ='80')), 
-                  column(width = 6, h2("Vaxx Next?"))),
-              windowTitle="MyPage"
+ui <- dashboardPage(
+  dashboardHeader(title = "VaxxNext"),
+  dashboardSidebar(
+    sidebarMenu(
+      uiOutput("User_Info"),
+      menuItem("Summary", tabName = "summary_tab", icon = icon("notes-medical")),
+      menuItem("Add new Treatment", tabName = "new_treatment_tab", icon = icon("th"))
+    )
   ),
-  # tags$img(src = "VaxxNext_logo.jpg"),
-  # titlePanel("Vaxx Next?"),
-  fluidRow(
-    column(width = 12,
-           # textOutput("text_Test"),
-           # tableOutput("df_Test"),
-           h3("Summary"),
-           uiOutput("User_Info"),
-           br(),
-           DT::dataTableOutput("summaryTable"),
-           br(),
-           br(),
-           br(),
-           conditionalPanel(condition = "typeof input.summaryTable_rows_selected  !== 'undefined' && input.summaryTable_rows_selected.length > 0",
-                uiOutput("header_selected_vaccine"),
-                br(),
-                # tags$head(tags$style("#header_selected_vaccine{color: black; font-size: 25px; font-style: bold}")),
-                DT::dataTableOutput("selected_vaccine_table"),
-                # conditionalPanel(condition = "typeof input.selected_vaccine_table_rows_selected  !== 'undefined' && input.selected_vaccine_table_rows_selected.length > 0",
-                #   div(style="display: inline-block;vertical-align:middle; width: 300px;",actionButton("change_date","Correct selected date")),
-                #   div(style="display: inline-block;vertical-align:middle; width: 150px;",actionButton("delete","delete selected date"))
-                # ),
-                br(),
-                div(style="display: inline-block;vertical-align:middle; width: 300px;",dateInput("new_vaccination_date","Date of new vaccination")),
-                div(style="display: inline-block;vertical-align:middle; width: 150px;",actionButton("Vaccinate","Vaccinate"))
-           )
+  dashboardBody(
+    tabItems(
+      # First tab content
+      tabItem(tabName = "summary_tab",
+              h2("Summary"),
+              # textOutput("text_Test"),
+              # tableOutput("df_Test"),
+              # tags$head(tags$style("#update_user{float:right;}")),
+              # actionButton("update_user","Update user Info"),
 
+              DT::dataTableOutput("summaryTable"),
+              br(),
+              br(),
+              br(),
+              conditionalPanel(condition = "typeof input.summaryTable_rows_selected  !== 'undefined' && input.summaryTable_rows_selected.length > 0",
+                               uiOutput("header_selected_vaccine"),
+                               br(),
+                               # tags$head(tags$style("#header_selected_vaccine{color: black; font-size: 25px; font-style: bold}")),
+                               DT::dataTableOutput("selected_vaccine_table"),
+                               # conditionalPanel(condition = "typeof input.selected_vaccine_table_rows_selected  !== 'undefined' && input.selected_vaccine_table_rows_selected.length > 0",
+                               #   div(style="display: inline-block;vertical-align:middle; width: 300px;",actionButton("change_date","Correct selected date")),
+                               #   div(style="display: inline-block;vertical-align:middle; width: 150px;",actionButton("delete","delete selected date"))
+                               # ),
+                               br(),
+                               div(style="display: inline-block;vertical-align:middle; width: 300px;",dateInput("new_vaccination_date","Date of new vaccination")),
+                               div(style="display: inline-block;vertical-align:middle; width: 150px;",actionButton("Vaccinate","Vaccinate"))
+              )
+      ),
+      
+      # Second tab content
+      tabItem(tabName = "new_treatment_tab",
+              h2("Add New Treatment"),
+              textInput("new_timetable_name",label = "Enter a name"),
+              checkboxGroupInput("new_timetable_ages","Age of vaccination / exam",choiceNames = c("2 month","4 month","9 month"," 1 year","7 years","15 years"), 
+                                 choiceValues = c("0.166", "0.33", "0.75", "1", "7", "15"), inline = TRUE),
+              textInput("new_recurring_events",label = "Recurring events (After 25 every 20 year and after 65 every 10 years enter 25:20 65:10)"),
+              actionButton("save_timetable","Save")
+      )
     )
   )
 )
 
-# Define server logic required to draw a histogram
-server <- function(input, output) {
-  
+server <- function(input, output, session) { 
   orange_status_after_n_days <- 200
   data_path <- ""
+  
+  output$text_Test <- renderText({
+    input$add_new_timetable
+  })
+  
+  output$df_Test <- renderTable({
+    cbind(input$new_timetable_ages,TRUE)
+  })
   
   output$User_Info <- renderUI({
     if(file.exists(paste0(data_path,"User_Info.Rds"))){
@@ -61,6 +77,15 @@ server <- function(input, output) {
         dateInput("date_of_birth","Please enter your date of birth.")
       )
     }
+  })
+  
+  observeEvent(input$update_user, {
+    output$User_Info <- renderUI({
+      tagList(
+        textInput("Name", "Please enter your name."),
+        dateInput("date_of_birth","Please enter your date of birth.")
+      )
+    })
   })
   
   date_of_birth <- reactive({
@@ -76,7 +101,7 @@ server <- function(input, output) {
     as.numeric(difftime(Sys.Date(),date_of_birth(), units = "weeks"))/52.25
   })
   
-  vaccination_timetable <- read.csv(paste0(data_path,"Vaccination_timetable.csv"))
+  vaccination_timetable <- read.csv(paste0(data_path,"Vaccination_timetable2.csv"))
   
   dt <- read.csv(paste0(data_path,"VN.csv"), na.strings = "")
   dt <- apply(dt,2,function(x){
@@ -84,26 +109,24 @@ server <- function(input, output) {
     out <- as.Date(out,format = "%Y-%m-%d")
     return(out)
     })
-
+  
   # if(file.exists(paste0(data_path,"my_Vaccinations.Rds"))){
   #   dt <- readRDS(paste0(data_path,"my_Vaccinations.Rds"))
+  #   if(length(dt) < ncol(vaccination_timetable)-1){
+  #     new_vaccines_names <- setdiff(colnames(vaccination_timetable)[-1],names(dt))
+  #     new_vaccines_list <- vector("list", length(new_vaccines_names))
+  #     names(new_vaccines_list) <- new_vaccines_names
+  #     dt <- c(dt,new_vaccines_list)
+  #   }
   # }else{
   #   dt <- vector("list", length(colnames(vaccination_timetable)[-1]))
   #   names(dt) <- colnames(vaccination_timetable)[-1]
   # }
-  vaccination_data <- reactiveValues(vaccinations=dt)
   
+  vaccination_data <- reactiveValues(vaccinations=dt)
   
   vaccinations <- reactive({
     vaccination_data[["vaccinations"]]
-  })
-  
-  output$text_Test <- renderText({
-    vaccine_names()
-  })
-  
-  output$df_Test <- renderTable({
-    str(vaccine_names())
   })
   
   vaccine_names <- reactive({names(vaccinations())})
@@ -122,12 +145,12 @@ server <- function(input, output) {
     for(i in 1:length(vaccinations())){
       current_vac <- vaccine_names()[i]
       time_table <- vaccination_timetable[1:(nrow(vaccination_timetable)-2),c("Age",current_vac)]
-      time_table <- time_table[time_table[,2] != "",]
+      time_table <- time_table[time_table[,2] != "" & !is.na(time_table[,2]),]
       recurring_boosters <- vaccination_timetable[vaccination_timetable$Age == "recurring_boosts",current_vac]
-      recurring_boosters <- strsplit(recurring_boosters,"_")[[1]]
+      recurring_boosters <- strsplit(recurring_boosters," ")[[1]]
       recurring_boosters <- matrix(as.numeric(unlist(strsplit(recurring_boosters,":"))),nrow = length(recurring_boosters), ncol = 2, byrow = TRUE)
       colnames(recurring_boosters) <- c("Age","booster_time")
-      if(length(vaccinations()[[i]]) == 0){
+      if(length(vaccinations()[[current_vac]]) == 0){
         if(age() > (as.numeric(first_vaccination[,current_vac]) + 3)){ # if unvaccinated remind up to 3 years
           next_vaccination <- c(next_vaccination, NA)
         }else{
@@ -163,6 +186,8 @@ server <- function(input, output) {
   out_table <- reactive({
     out_table <- data.frame(vaccine_names(), last_vaccination(),next_vaccination(),status())
     colnames(out_table) <- c("Name","Last Vaccination","Next Vaccination","Status")
+    # out_table <- out_table[!(status() == "ok" & is.na(last_vaccination())) ,]
+    out_table <- out_table[order(out_table$'Last Vaccination'),]
     out_table <- out_table[order(out_table$'Next Vaccination'),]
     out_table$'Last Vaccination' <- as.character(as.Date(out_table$'Last Vaccination', origin = '1970-01-01'))
     out_table$'Next Vaccination' <- as.character(as.Date(out_table$'Next Vaccination', origin = '1970-01-01'))
@@ -171,7 +196,7 @@ server <- function(input, output) {
   
   output$summaryTable <- DT::renderDataTable({
     datatable(out_table(), selection = 'single', rownames = FALSE )%>%formatStyle("Status",
-            backgroundColor=styleEqual(c("ok","soon","overdue","3+ years overdue"), c("green","orange","red","darkred")))
+                                                                                  backgroundColor=styleEqual(c("ok","soon","overdue","3+ years overdue"), c("green","orange","red","darkred")))
     # datatable(out_table)
     
   })
@@ -182,10 +207,10 @@ server <- function(input, output) {
   
   output$header_selected_vaccine <- renderUI({
     status_table <- data.frame(status = c("ok","soon","overdue","3+ years overdue"), c("green","orange","red","darkred"))
-      current_vaccine_status <- out_table()$Status[input$summaryTable_rows_selected]
-      status_color <- status_table$color[status_table$status == current_vaccine_status]
-      a <- paste0("<span style=color:",status_color,";font-size:200%>", selected_vaccine(), "</span>")
-      HTML(a)
+    current_vaccine_status <- out_table()$Status[input$summaryTable_rows_selected]
+    status_color <- status_table$color[status_table$status == current_vaccine_status]
+    a <- paste0("<span style=color:",status_color,";font-size:200%>", selected_vaccine(), "</span>")
+    HTML(a)
   })
   
   current_vaccine <- reactive({
@@ -201,7 +226,7 @@ server <- function(input, output) {
       } 
     }
   })
-
+  
   output$selected_vaccine_table <- DT::renderDataTable(
     current_vaccine(), options = list(pageLength = 5),
     selection = 'single', rownames = FALSE
@@ -220,12 +245,34 @@ server <- function(input, output) {
   
   observeEvent(input$date_of_birth, {
     if(!is.null(input$date_of_birth) & !is.null(input$Name)){
-    Info <- list(Name = input$Name ,date_of_birth = input$date_of_birth)
-    saveRDS(Info,paste0(data_path,"User_Info.Rds"))
+      Info <- list(Name = input$Name ,date_of_birth = input$date_of_birth)
+      saveRDS(Info,paste0(data_path,"User_Info.Rds"))
     }
   })
   
+  observeEvent(input$save_timetable, {
+    new_timetable <- reactive({
+      if(length(input$new_timetable_ages) != 0){
+        nt <- cbind(c(input$new_timetable_ages),TRUE)
+        nt <- rbind(nt,c("first_vaccination",min(as.numeric(input$new_timetable_ages))))
+        nt <- rbind(nt,c("recurring_boosts",input$new_recurring_events))
+      }else{
+        rb <- strsplit(input$new_recurring_events," ")[[1]]
+        rb <- as.numeric(unlist(strsplit(rb,":")))[1]
+        nt <- c("first_vaccination",rb)
+        nt <- rbind(nt,c("recurring_boosts",input$new_recurring_events))
+      }
+      colnames(nt) <- c("Age", input$new_timetable_name)
+      merge.data.frame(vaccination_timetable,nt,by = "Age",all.x=TRUE, all.y=TRUE)
+    })
+    write.csv(new_timetable(),paste0(data_path,"Vaccination_timetable2.csv"), row.names = FALSE)
+    showNotification("New Treatment was added!", type = "message")
+    updateTextInput(session,"new_timetable_name",value = "")
+    updateCheckboxGroupInput(session,"new_timetable_ages",choiceNames = c("2 month","4 month","9 month"," 1 year","7 years","15 years"), 
+                             choiceValues = c("0.166", "0.33", "0.75", "1", "7", "15"), inline = TRUE)
+    updateTextInput(session,"new_recurring_events",value = "")
+    # reloadData(vaccination_data)
+  })
 }
 
-# Run the application 
-shinyApp(ui = ui, server = server)
+shinyApp(ui, server)
