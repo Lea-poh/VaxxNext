@@ -1,6 +1,7 @@
 ## app.R ##
 library(shiny)
 library(shinydashboard)
+library(shiny.pwa)
 library(DT)
 
 ui <- dashboardPage(
@@ -51,7 +52,8 @@ ui <- dashboardPage(
               actionButton("save_timetable","Save")
       )
     )
-  )
+  ),
+  pwa("https://zjtaylor.shinyapps.io/VaxxNext",title = "VaxxNext",icon = "www/VaxxNext_logo.png",output = "www")
 )
 
 server <- function(input, output, session) { 
